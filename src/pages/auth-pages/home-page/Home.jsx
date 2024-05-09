@@ -1,5 +1,5 @@
 import { ArrowUpOnSquareStackIcon } from "@heroicons/react/24/solid";
-import { Cross2Icon } from "@radix-ui/react-icons";
+import { Cross2Icon, ReloadIcon } from "@radix-ui/react-icons";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
@@ -34,6 +34,7 @@ const Home = () => {
 
 	const [file, setFile] = useState(null);
 	const [isAllColumnsSelected, setIsAllColumnsSelected] = useState(false);
+	const [mainData, setMainData] = useState([]);
 
 	const handleFileChange = (e) => {
 		const uploadedFile = e.target.files[0];
@@ -42,6 +43,74 @@ const Home = () => {
 
 	const handleRemoveFile = () => {
 		setFile(null);
+	};
+
+	const isArrayEmpty = (array) => {
+		let emptyValues = 0;
+		for (let i = 0; i < array.length; i++) {
+			if (!array[i]) {
+				if (array[i].toString() === "0") {
+					continue;
+				}
+				emptyValues += 1;
+			}
+		}
+		if (emptyValues === array.length) {
+			return true;
+		}
+		return false;
+	};
+
+	const processCsvFile = (str, delim = ",") => {
+		const headers = str.slice(0, str.indexOf("\n")).split(delim);
+		if (headers[0] === "") {
+			headers[0] = "Index No";
+		}
+
+		const rows = str.slice(str.indexOf("\n") + 1).split("\n");
+
+		const seperatedRows = [];
+		const dataArray = [];
+
+		for (let i = 0; i < rows.length; i++) {
+			const tempRow = rows[i].split(delim);
+			seperatedRows.push(tempRow);
+		}
+
+		seperatedRows.forEach((row) => {
+			const el = Object.values(row);
+			if (!isArrayEmpty(el)) {
+				const tempObj = {};
+				for (let i = 0; i < el.length; i++) {
+					Object.defineProperty(tempObj, headers[i], {
+						value: el[i],
+						writable: true,
+						enumerable: true,
+						configurable: true,
+					});
+				}
+				dataArray.push(tempObj);
+			}
+		});
+		if (dataArray && dataArray.length) {
+			setMainData(dataArray);
+		}
+	};
+
+	const analyzeFile = () => {
+		const fileToProcess = file;
+		const reader = new FileReader();
+
+		reader.onload = (e) => {
+			let text = e.target?.result;
+			if (typeof text != "string") {
+				text = "";
+			}
+			processCsvFile(text);
+		};
+		if (fileToProcess) {
+			reader.readAsText(fileToProcess);
+		}
 	};
 
 	return (
@@ -98,6 +167,13 @@ const Home = () => {
 											Demo Logs
 										</Link>
 									</span>{" "}
+									in the{" "}
+									<Link
+										className="underline text-indigo-500 font-bold"
+										target="_blank"
+										to={"https://www.unb.ca/cic/datasets/ddos-2019.html"}>
+										CIC-DoS Dataset
+									</Link>{" "}
 									format please{" "}
 								</span>
 							</CardDescription>
@@ -112,7 +188,6 @@ const Home = () => {
 									35 Important Features
 								</Label>
 								<Switch
-									// value={isAllColumnsSelected}
 									onCheckedChange={(e) => {
 										setIsAllColumnsSelected(e);
 									}}
@@ -163,7 +238,20 @@ const Home = () => {
 							</div>
 						</CardContent>
 						<CardFooter>
-							<Button>Save password</Button>
+							{file && file?.name && file?.size > 0 ? (
+								<Button
+									onClick={() => {
+										analyzeFile();
+									}}>
+									Analyze Log
+								</Button>
+							) : (
+								<Button disabled>
+									{" "}
+									<ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> Waiting
+									For Log
+								</Button>
+							)}
 						</CardFooter>
 					</Card>
 				</TabsContent>
