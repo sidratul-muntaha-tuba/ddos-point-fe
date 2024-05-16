@@ -1,9 +1,12 @@
 import React from "react";
 import TableComponent from "../components/common/TableComponent";
+import mainDataSet from "../data/one_thirty_five_rows.json";
 import Home from "../pages/auth-pages/home-page/Home";
 import About from "../pages/common-pages/about-page/About";
 import Login from "../pages/un-auth-pages/authentication-pages/Login";
 import VisitingHomePage from "../pages/un-auth-pages/visiting-home/VisitingHomePage";
+
+const dataSet = mainDataSet.slice(0, 10);
 
 export const navItems = [
 	{
@@ -16,14 +19,18 @@ export const navItems = [
 	{
 		path: "/demo-logs-importants",
 		name: "Demo Logs (Importants)",
-		element: <TableComponent />,
+		element: (
+			<TableComponent dataSet={dataSet} showFeatures={true} showHeader={true} />
+		),
 		isMenu: false,
 		isAuthenticationNeeded: true,
 	},
 	{
 		path: "/demo-logs",
 		name: "Demo Logs",
-		element: <TableComponent />,
+		element: (
+			<TableComponent dataSet={dataSet} showFeatures={true} showHeader={true} />
+		),
 		isMenu: true,
 		isAuthenticationNeeded: true,
 	},

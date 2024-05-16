@@ -3,6 +3,10 @@ import { Cross2Icon, ReloadIcon } from "@radix-ui/react-icons";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
+import TableComponent from "../../../components/common/TableComponent";
+import { onlyImportantKeySet } from "../../../constants/common";
+import mainDataSet from "../../../data/one_thirty_five_rows.json";
+import { postDataToBe } from "../../../helpers/common";
 import { Button } from "../../../ui-components/ui/button";
 import {
 	Card,
@@ -12,8 +16,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../../ui-components/ui/card";
-import { Input } from "../../../ui-components/ui/input";
 import { Label } from "../../../ui-components/ui/label";
+import { Skeleton } from "../../../ui-components/ui/skeleton";
 import { Switch } from "../../../ui-components/ui/switch";
 import {
 	Tabs,
@@ -21,6 +25,7 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "../../../ui-components/ui/tabs";
+import { baseBeUrl, predictionUrl } from "../../../urls/url";
 
 const Home = () => {
 	const currentUser = useSelector((state) => state.loggedInUser || null);
@@ -33,83 +38,71 @@ const Home = () => {
 	}, [currentUser]);
 
 	const [file, setFile] = useState(null);
+	const [hasRequestSent, setHasRequestSent] = useState(false);
 	const [isAllColumnsSelected, setIsAllColumnsSelected] = useState(false);
 	const [mainData, setMainData] = useState([]);
+	const getRandomTenDataFromDataSet = () => {
+		const randomData = mainDataSet.sort(() => Math.random() - 0.5).slice(0, 10);
+		return randomData;
+	};
+
+	const getRandomTwentyDataFromCsv = () => {
+		setMainData(getRandomTenDataFromDataSet());
+	};
+
+	const clearMainData = () => {
+		handleRemoveFile();
+		setMainData([]);
+	};
 
 	const handleFileChange = (e) => {
+		setMainData([]);
 		const uploadedFile = e.target.files[0];
 		setFile(uploadedFile);
+		const fileReader = new FileReader();
+		fileReader.readAsText(uploadedFile);
+		fileReader.onload = (e) => {
+			const csv = e.target.result;
+			const lines = csv.split("\n");
+			const headers = lines[0].split(",");
+			const data = [];
+			for (let i = 1; i < lines.length; i++) {
+				const currentLine = lines[i].split(",");
+				if (currentLine.length === headers.length) {
+					let obj = {};
+					for (let j = 0; j < headers.length; j++) {
+						obj[headers[j]] = currentLine[j];
+					}
+					data.push(obj);
+				}
+			}
+			if (data && data.length) {
+				setMainData(data);
+			}
+		};
 	};
 
 	const handleRemoveFile = () => {
 		setFile(null);
+		setMainData([]);
 	};
 
-	const isArrayEmpty = (array) => {
-		let emptyValues = 0;
-		for (let i = 0; i < array.length; i++) {
-			if (!array[i]) {
-				if (array[i].toString() === "0") {
-					continue;
-				}
-				emptyValues += 1;
+	const getResultFromBe = async (data) => {
+		setHasRequestSent(true);
+		const response = await postDataToBe(baseBeUrl + predictionUrl, data);
+		if (response) {
+			const newMainData = mainData.map((item, i) => {
+				const newItem = {
+					prediction: response[i].general,
+					attackType: response[i].specific,
+					...item,
+				};
+				return newItem;
+			});
+			if (newMainData && newMainData.length) {
+				setMainData(newMainData);
 			}
-		}
-		if (emptyValues === array.length) {
-			return true;
-		}
-		return false;
-	};
-
-	const processCsvFile = (str, delim = ",") => {
-		const headers = str.slice(0, str.indexOf("\n")).split(delim);
-		if (headers[0] === "") {
-			headers[0] = "Index No";
-		}
-
-		const rows = str.slice(str.indexOf("\n") + 1).split("\n");
-
-		const seperatedRows = [];
-		const dataArray = [];
-
-		for (let i = 0; i < rows.length; i++) {
-			const tempRow = rows[i].split(delim);
-			seperatedRows.push(tempRow);
-		}
-
-		seperatedRows.forEach((row) => {
-			const el = Object.values(row);
-			if (!isArrayEmpty(el)) {
-				const tempObj = {};
-				for (let i = 0; i < el.length; i++) {
-					Object.defineProperty(tempObj, headers[i], {
-						value: el[i],
-						writable: true,
-						enumerable: true,
-						configurable: true,
-					});
-				}
-				dataArray.push(tempObj);
-			}
-		});
-		if (dataArray && dataArray.length) {
-			setMainData(dataArray);
-		}
-	};
-
-	const analyzeFile = () => {
-		const fileToProcess = file;
-		const reader = new FileReader();
-
-		reader.onload = (e) => {
-			let text = e.target?.result;
-			if (typeof text != "string") {
-				text = "";
-			}
-			processCsvFile(text);
-		};
-		if (fileToProcess) {
-			reader.readAsText(fileToProcess);
+			setHasRequestSent(false);
 		}
 	};
 
@@ -117,6 +110,13 @@ const Home = () => {
 		<div className="h-full w-full">
 			<Tabs
 				defaultValue="own-log-file"
+				onValueChange={(value) => {
+					if (value === "own-log-file") {
+						clearMainData();
+					} else {
+						getRandomTwentyDataFromCsv();
+					}
+				}}
 				className="max-w-sm sm:max-w-[90%] mx-auto">
 				<TabsList className="grid w-full grid-cols-2">
 					<TabsTrigger value="own-log-file">Personal Log</TabsTrigger>
@@ -131,18 +131,49 @@ const Home = () => {
 								by-default log file where you an still do some tweaks...
 							</CardDescription>
 						</CardHeader>
-						<CardContent className="space-y-2">
-							<div className="space-y-1">
-								<Label htmlFor="name">Name</Label>
-								<Input id="name" defaultValue="Pedro Duarte" />
-							</div>
-							<div className="space-y-1">
-								<Label htmlFor="username">Username</Label>
-								<Input id="username" defaultValue="@peduarte" />
-							</div>
+						<CardContent>
+							{hasRequestSent ? (
+								<div className="flex flex-col space-y-3 ml-auto mr-auto">
+									<Skeleton className="h-[180px] w-[60%] rounded-xl" />
+									<div className="space-y-2 w-full">
+										<Skeleton className="h-4 w-[60%]" />
+										<Skeleton className="h-4 w-[50%]" />
+									</div>
+								</div>
+							) : (
+								<TableComponent
+									dataSet={mainData}
+									showFeatures={false}
+									showHeader={true}
+								/>
+							)}
 						</CardContent>
 						<CardFooter>
-							<Button>Save changes</Button>
+							{mainData && mainData.length > 0 ? (
+								<>
+									{mainData[0]["prediction"] ? (
+										<Button
+											onClick={() => {
+												getResultFromBe(mainData);
+											}}>
+											Analyze Log
+										</Button>
+									) : (
+										<Button
+											onClick={() => {
+												clearMainData();
+											}}>
+											Reset
+										</Button>
+									)}
+								</>
+							) : (
+								<Button disabled>
+									{" "}
+									<ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> Waiting
+									For Log
+								</Button>
+							)}
 						</CardFooter>
 					</Card>
 				</TabsContent>
@@ -185,7 +216,7 @@ const Home = () => {
 										isAllColumnsSelected ? "" : "text-red-300 font-bold"
 									}`}
 									htmlFor="general-mode">
-									35 Important Features
+									{onlyImportantKeySet.length} Important Features
 								</Label>
 								<Switch
 									onCheckedChange={(e) => {
@@ -210,7 +241,9 @@ const Home = () => {
 											<span>{file.name}</span>
 											<Cross2Icon
 												className="ml-2 h-5 text-red-500 cursor-pointer border-2 border-red-400 rounded-full w-5 p-[1/2]"
-												onClick={handleRemoveFile}
+												onClick={() => {
+													handleRemoveFile();
+												}}
 											/>
 										</div>
 									) : (
@@ -236,15 +269,45 @@ const Home = () => {
 									)}
 								</Label>
 							</div>
+							{hasRequestSent ? (
+								<div className="flex flex-col space-y-3 ml-auto mr-auto">
+									<Skeleton className="h-[180px] w-[60%] rounded-xl" />
+									<div className="space-y-2 w-full">
+										<Skeleton className="h-4 w-[60%]" />
+										<Skeleton className="h-4 w-[50%]" />
+									</div>
+								</div>
+							) : (
+								<TableComponent
+									dataSet={mainData}
+									showFeatures={false}
+									showHeader={false}
+								/>
+							)}
 						</CardContent>
 						<CardFooter>
-							{file && file?.name && file?.size > 0 ? (
-								<Button
-									onClick={() => {
-										analyzeFile();
-									}}>
-									Analyze Log
-								</Button>
+							{file &&
+							file?.name &&
+							file?.size > 0 &&
+							mainData &&
+							mainData.length > 0 ? (
+								<>
+									{!mainData[0]["prediction"] ? (
+										<Button
+											onClick={() => {
+												getResultFromBe(mainData);
+											}}>
+											Analyze Log
+										</Button>
+									) : (
+										<Button
+											onClick={() => {
+												clearMainData();
+											}}>
+											Reset
+										</Button>
+									)}
+								</>
 							) : (
 								<Button disabled>
 									{" "}
