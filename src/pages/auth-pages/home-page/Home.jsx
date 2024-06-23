@@ -18,7 +18,6 @@ import {
 } from "../../../ui-components/ui/card";
 import { Label } from "../../../ui-components/ui/label";
 import { Skeleton } from "../../../ui-components/ui/skeleton";
-import { Switch } from "../../../ui-components/ui/switch";
 import {
 	Tabs,
 	TabsContent,
@@ -151,7 +150,7 @@ const Home = () => {
 						<CardFooter>
 							{mainData && mainData.length > 0 ? (
 								<>
-									{mainData[0]["prediction"] ? (
+									{!mainData[0]["prediction"] ? (
 										<Button
 											onClick={() => {
 												getResultFromBe(mainData);
@@ -218,7 +217,7 @@ const Home = () => {
 									htmlFor="general-mode">
 									{onlyImportantKeySet.length} Important Features
 								</Label>
-								<Switch
+								{/* <Switch
 									onCheckedChange={(e) => {
 										setIsAllColumnsSelected(e);
 									}}
@@ -230,7 +229,7 @@ const Home = () => {
 										isAllColumnsSelected ? "text-red-300 font-bold" : ""
 									}`}>
 									All Features
-								</Label>
+								</Label> */}
 							</div>
 							<div className="w-full">
 								<Label

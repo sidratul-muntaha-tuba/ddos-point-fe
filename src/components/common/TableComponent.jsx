@@ -85,7 +85,7 @@ const TableComponent = (props) => {
 									htmlFor="general-mode">
 									{onlyImportantKeySet.length} Important Features
 								</Label>
-								<Switch
+								{/* <Switch
 									onCheckedChange={(e) => setIsAllColumnsSelected(e)}
 									id="airplane-mode"
 								/>
@@ -95,7 +95,7 @@ const TableComponent = (props) => {
 										isAllColumnsSelected ? "text-red-300 font-bold" : ""
 									}`}>
 									All Features
-								</Label>
+								</Label> */}
 							</>
 						)}
 					</div>
