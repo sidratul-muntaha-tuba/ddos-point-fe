@@ -85,7 +85,7 @@ const Navbar = () => {
 												<img
 													className="h-10 w-auto"
 													src={RepointIcon}
-													alt="Repoint"
+													alt="DDoS Point"
 												/>
 											</Link>
 										</div>

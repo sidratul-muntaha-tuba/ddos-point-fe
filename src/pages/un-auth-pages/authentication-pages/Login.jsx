@@ -99,7 +99,7 @@ const Login = () => {
 				<img
 					className="h-full w-full object-cover dark:brightness-[0.8] dark:grayscale"
 					src="https://cdn.metatime.com/landing/blog/1686575019blobid1.jpg"
-					alt="Repoint"
+					alt="DDoS Point"
 				/>
 			</div>
 		</div>
