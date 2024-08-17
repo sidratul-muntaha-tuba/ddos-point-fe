@@ -83,6 +83,7 @@ const Login = () => {
 								onChange={(e) => setPassword(e.target.value)}
 							/>
 						</div>
+						<span className="mt-2 text-sm text-gray-400">Public Access Granted! Use <strong>admin</strong> for both email and password...</span>
 						<Button
 							onClick={() => {
 								login();
